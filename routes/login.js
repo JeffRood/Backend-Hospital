@@ -1,63 +1,55 @@
-var express = require('express');
-var bcrypt = require('bcryptjs');
-var jwt = require('jsonwebtoken');
+var express = require("express");
+var bcrypt = require("bcryptjs");
+var jwt = require('jsonwebtoken')
+
+var SEED = require('../config/config').SEED;
 
 var app = express();
-var SEED = require('../config/config').SEED;
-var Usuario = require("../models/Usuario");
+
+var Usuario = require("../models/usuario");
 
 
-
-app.post('/', (req, res) => {
+app.post('/', (req,res) => {
 
     var body = req.body;
 
-    Usuario.findOne({ email: body.email }, (err, usuarioDB) => {
-
+    Usuario.findOne({email: body.email}, (err, usuarioDB) => {
         if (err) {
             return res.status(500).json({
+              ok: false,
+              mensaje: "error al buscar usuario",
+              errors: err
+            });
+          }
+
+          if(!usuarioDB){
+            return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al buscar usuario',
-                errors: err
-            })
-        }
+                mensaje: "Credenciales incorrectas - email",
+                errors: {mensaje: 'Credenciales incorrectas' }
+              });
+          }
 
-        if (!usuarioDB) {
-            return res.status(500).json({
+          if(!bcrypt.compareSync(body.password, usuarioDB.password)){
+            return res.status(400).json({
                 ok: false,
-                mensaje: 'Credenciales Incorrecta --mail',
-                errors: err
-            })
-        }
-        if (!bcrypt.compareSync(body.password, usuarioDB.password)) {
-            return res.status(500).json({
-                ok: false,
-                mensaje: 'Credenciales Incorrecta -- password',
-                errors: err
-            })
-        }
+                mensaje: "Credenciales incorrectas - password",
+                errors: {mensaje: 'Credenciales incorrectas' }
+              });
+          }
 
-        // Crear un token
-        usuarioDB.password = 'Sigue Intentando';
-        var token = jwt.sign({ Usuario: usuarioDB },
-                SEED, { expiresIn: 14400 }) //4 horas
+          // Crear un token!!
+          usuarioDB.password = 'XD';
+          var token = jwt.sign({ usuario: usuarioDB},SEED,{ expiresIn: 14400}); // 4horas
 
-
-        res.status(201).json({
+          res.status(200).json({
             ok: true,
             Usuario: usuarioDB,
             token: token,
-            id: usuarioDB.id
-        })
-    })
+            id: usuarioDB.id 
+        });
+    });
 
-
-
-})
-
-
-
-
-
-
+    
+});
 module.exports = app;
